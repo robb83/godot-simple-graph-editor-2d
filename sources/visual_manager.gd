@@ -1,12 +1,14 @@
 extends Node2D
+class_name VisualManager
 
 @onready var container: Node2D = $Container
 @onready var control: Control = $CanvasLayer/Control
 @onready var line_edit: LineEdit = $CanvasLayer/Control/MarginContainer/HBoxContainer/LineEdit
 @onready var edge_container: Node2D = $EdgeContainer
 
-var resource_node : Resource = preload("res://visual_node.tscn")
-var resource_port : Resource = preload("res://visual_port.tscn")
+signal create_node_on_position(pos : Vector2)
+signal create_node_on_position_and_connect(pos : Vector2, port : VisualPort)
+
 var resource_edge : Resource = preload("res://visual_edge.tscn")
 
 var edges := []
@@ -22,25 +24,48 @@ var hover_edge : VisualEdge = null
 var hover_effect_applied := []
 var edit_node : VisualNode = null
 var edit_port : VisualPort = null
-var name_counter : int = -1
 
 var last_click_time := 0.0
 const DOUBLE_CLICK_DELAY := 0.3
 
-func _ready():
-	#create_test()
-	create_node_alt_1(Vector2(-80, 0), "A001")
-	create_node_alt_2(Vector2(80, 0), "B002")
+func add_node(node : VisualNode):
+	nodes.append(node)
+	container.add_child(node)
 	
-func create_test():
-	var offset = Vector2(1000, 1000)
-	var previous = null
-	for x in range(20):
-		for y in range(20):
-			var current = create_node_alt_2(Vector2(x * 100, y * 100) - offset, _get_next_name())
-			if previous:
-				connect_to(previous.ports[0], current.ports[3])
-			previous = current
+func connect_to(vp1 : VisualPort, vp2 : VisualPort):
+	if vp1 == vp2:
+		return
+	if connections.has(vp1) and connections[vp1].has(vp2):
+		return
+	if connections.has(vp2) and connections[vp2].has(vp1):
+		return
+	if vp1.direction != Enums.VisualPortDirection.INPUT_OUTPUT and vp2.direction != Enums.VisualPortDirection.INPUT_OUTPUT and vp1.direction == vp2.direction:
+		return
+	if not vp1.multiple_connection:
+		remove_port(vp1)
+	if not vp2.multiple_connection:
+		remove_port(vp2)
+		
+	if not connections.has(vp1): connections[vp1] = []
+	if not connections.has(vp2): connections[vp2] = []
+	if not port_edge.has(vp1): port_edge[vp1] = []
+	if not port_edge.has(vp2): port_edge[vp2] = []
+	
+	var edge = create_edge(vp1, vp2)
+	edge_container.add_child(edge)
+	
+	connections[vp1].append(vp2)
+	connections[vp2].append(vp1)
+	port_edge[vp1].append(edge)
+	port_edge[vp2].append(edge)
+	
+	edges.append(edge)
+
+func create_edge(a: VisualPort, b: VisualPort):
+	var edge = resource_edge.instantiate()
+	edge.port_a = a
+	edge.port_b = b
+	return edge
 	
 func _draw():
 	if selected_port:
@@ -51,70 +76,6 @@ func _draw():
 func _process(_delta):
 	#TODO: redraw only when needed
 	queue_redraw()
-
-func create_edge(a: VisualPort, b: VisualPort):
-	var edge = resource_edge.instantiate()
-	edge.port_a = a
-	edge.port_b = b
-	edge_container.add_child(edge)
-	return edge
-	
-func create_port(node : VisualNode, label : String, label_pos : Enums.TextPosition, pos : Vector2, direction : Enums.VisualPortDirection, multiple_connection : bool = true):
-	var port = resource_port.instantiate()
-	port.multiple_connection = multiple_connection
-	port.direction = direction
-	port.text = label
-	port.text_pos = label_pos
-	port.position = pos
-	match direction:
-		Enums.VisualPortDirection.INPUT:
-			port.color = Color.ORANGE_RED
-		Enums.VisualPortDirection.OUTPUT:
-			port.color = Color.DODGER_BLUE
-		Enums.VisualPortDirection.INPUT_OUTPUT:	
-			port.color = Color.WHITE
-	node.add_port(port)
-	return port
-	
-func create_node(pos: Vector2, label_text: String):
-	if randi_range(0, 10) < 3:
-		return create_node_alt_2(pos, label_text)
-	else:
-		return create_node_alt_1(pos, label_text)
-	
-func create_node_alt_1(pos: Vector2, label_text: String):
-	var size = 32
-	var padding = 2
-	
-	var node = resource_node.instantiate()
-	node.position = pos
-	node.text = label_text
-	
-	var port_top = create_port(node, "TOP", Enums.TextPosition.TOP, Vector2(0, -(size + padding)), Enums.VisualPortDirection.INPUT_OUTPUT, true)
-	var port_right = create_port(node , "RHT", Enums.TextPosition.RIGHT, Vector2( (size + padding), 0), Enums.VisualPortDirection.INPUT_OUTPUT, true)
-	var port_bottom = create_port(node, "BTM", Enums.TextPosition.BOTTOM, Vector2(0, (size + padding)), Enums.VisualPortDirection.INPUT_OUTPUT, true)
-	var port_left = create_port(node, "LFT", Enums.TextPosition.LEFT, Vector2( -(size + padding), 0), Enums.VisualPortDirection.INPUT_OUTPUT, true)
-	
-	nodes.append(node)
-	container.add_child(node)
-	return node
-	
-func create_node_alt_2(pos: Vector2, label_text: String):
-	var size = 32
-	var padding = 2
-	
-	var node = preload("res://visual_node.tscn").instantiate()
-	node.position = pos
-	node.text = label_text
-	
-	var port_right_1 = create_port(node , "R1", Enums.TextPosition.RIGHT, Vector2( (size + padding), -12), Enums.VisualPortDirection.OUTPUT, true)
-	var port_right_2 = create_port(node , "R2", Enums.TextPosition.RIGHT, Vector2( (size + padding), 12), Enums.VisualPortDirection.OUTPUT, true)
-	var port_left_1 = create_port(node, "L1", Enums.TextPosition.LEFT, Vector2( -(size + padding), -12), Enums.VisualPortDirection.INPUT, false)
-	var port_left_2 = create_port(node, "L2", Enums.TextPosition.LEFT, Vector2( -(size + padding), 12), Enums.VisualPortDirection.INPUT, false)
-	
-	nodes.append(node)
-	container.add_child(node)
-	return node
 
 func _start_rename():
 	if edit_node:
@@ -160,34 +121,6 @@ func _export_graph():
 		
 	var components = Utils.find_connected_components(nodes, edges)
 	print("components = %d" % components.size())
-
-func connect_to(vp1 : VisualPort, vp2 : VisualPort):
-	if vp1 == vp2:
-		return
-	if connections.has(vp1) and connections[vp1].has(vp2):
-		return
-	if connections.has(vp2) and connections[vp2].has(vp1):
-		return
-	if vp1.direction != Enums.VisualPortDirection.INPUT_OUTPUT and vp2.direction != Enums.VisualPortDirection.INPUT_OUTPUT and vp1.direction == vp2.direction:
-		return
-	if not vp1.multiple_connection:
-		remove_port(vp1)
-	if not vp2.multiple_connection:
-		remove_port(vp2)
-		
-	if not connections.has(vp1): connections[vp1] = []
-	if not connections.has(vp2): connections[vp2] = []
-	if not port_edge.has(vp1): port_edge[vp1] = []
-	if not port_edge.has(vp2): port_edge[vp2] = []
-	
-	var edge = create_edge(vp1, vp2)
-	
-	connections[vp1].append(vp2)
-	connections[vp2].append(vp1)
-	port_edge[vp1].append(edge)
-	port_edge[vp2].append(edge)
-	
-	edges.append(edge)
 
 func remove_node(node : VisualNode):
 	var to_remove = []
@@ -289,13 +222,6 @@ func _handle_mouse_hover_node_port(mouse_pos : Vector2):
 	hover_port = current_hover_port
 	hover_node = current_hover_node
 
-func _create_node_at_mouse(port:VisualPort, mouse_pos : Vector2):
-	var n = create_node(mouse_pos, _get_next_name())
-	var np = n.get_nearest_port(port.global_position)
-	if np:
-		connect_to(port, np)
-	return n
-
 func _move_selected_node(node: VisualNode, mouse_pos : Vector2):
 	if node:
 		node.global_position = mouse_pos
@@ -341,7 +267,7 @@ func _input(event: InputEvent) -> void:
 		if selected_port != null and hover_port and hover_port != selected_port:
 			connect_to(selected_port, hover_port)
 		if selected_port != null && hover_port == null:
-			_create_node_at_mouse(selected_port, mouse_pos)
+			create_node_on_position_and_connect.emit(mouse_pos, selected_port)
 		selected_port = null
 		selected_node = null
 		
@@ -384,9 +310,7 @@ func _input(event: InputEvent) -> void:
 		elif edit_port:
 			pass
 		elif double_click:
-			var size = get_viewport().get_visible_rect()
-			if size.has_point(mouse_pos):
-				create_node(mouse_pos, _get_next_name())
+			create_node_on_position.emit(mouse_pos)
 			
 	if Input.is_action_just_pressed("rclick") or Input.is_action_just_pressed("delete"):
 		if hover_node:
@@ -402,10 +326,6 @@ func _input(event: InputEvent) -> void:
 	_move_selected_node(selected_node, mouse_pos)
 	_handle_mouse_hover_edge(mouse_pos)
 	_handle_hover_effect_on_edges()
-
-func _get_next_name():
-	name_counter = name_counter + 1
-	return "N" + str(name_counter).pad_zeros(3)
 
 func _draw_bezier_curve(from: Vector2, to: Vector2, color := Color.AQUA, width := 2.0, steps := 32):
 	var points = Utils.get_bezier_curve(from, to, steps)

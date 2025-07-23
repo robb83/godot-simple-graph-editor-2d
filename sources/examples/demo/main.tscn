@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3 uid="uid://2u3wku11lkf3"]
+
+[ext_resource type="Script" uid="uid://dbqfjhq78xmjo" path="res://examples/demo/main.gd" id="1_fyvn1"]
+[ext_resource type="PackedScene" uid="uid://b6x0le533a4t3" path="res://visual_manager.tscn" id="1_jgkt7"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_fyvn1")
+
+[node name="VisualManager" parent="." instance=ExtResource("1_jgkt7")]
+
+[connection signal="create_node_on_position" from="VisualManager" to="." method="_on_visual_manager_create_node_on_position"]
+[connection signal="create_node_on_position_and_connect" from="VisualManager" to="." method="_on_visual_manager_create_node_on_position_and_connect"]
