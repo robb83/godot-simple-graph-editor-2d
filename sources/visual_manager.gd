@@ -234,9 +234,7 @@ func _handle_mouse_hover_edge(mouse_pos : Vector2):
 	for r in result:
 		var parent = r.collider.owner
 		if is_instance_of(parent, VisualEdge):
-			var from = parent.port_a.global_position
-			var to = parent.port_b.global_position
-			if Utils.is_mouse_near_bezier(mouse_pos, from, to):
+			if parent.is_near(mouse_pos):
 				hover_edge = parent
 				break
 				
