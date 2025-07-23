@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3 uid="uid://ovbd8rrfbots"]
+
+[ext_resource type="Script" uid="uid://cr7i6ohgie1ut" path="res://visual_edge.gd" id="1_3xtmx"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_w8bi8"]
+resource_local_to_scene = true
+
+[node name="VisualEdge" type="Node2D"]
+script = ExtResource("1_3xtmx")
+
+[node name="Area2D" type="Area2D" parent="."]
+collision_layer = 2
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+shape = SubResource("RectangleShape2D_w8bi8")

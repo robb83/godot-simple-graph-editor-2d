@@ -1,0 +1,56 @@
+[gd_scene load_steps=3 format=3 uid="uid://b6x0le533a4t3"]
+
+[ext_resource type="Script" uid="uid://d3jatklcjdycm" path="res://visual_manager.gd" id="1_nybtt"]
+[ext_resource type="Script" uid="uid://l15cu5j2ea3c" path="res://camera_2d.gd" id="2_fk2if"]
+
+[node name="VisualManager" type="Node2D"]
+script = ExtResource("1_nybtt")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+script = ExtResource("2_fk2if")
+
+[node name="EdgeContainer" type="Node2D" parent="."]
+
+[node name="Container" type="Node2D" parent="."]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Control" type="Control" parent="CanvasLayer"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/Control"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -59.5
+offset_top = -31.0
+offset_right = 59.5
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/Control/MarginContainer"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CanvasLayer/Control/MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "Label:"
+
+[node name="LineEdit" type="LineEdit" parent="CanvasLayer/Control/MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[connection signal="text_submitted" from="CanvasLayer/Control/MarginContainer/HBoxContainer/LineEdit" to="." method="_on_line_edit_text_submitted"]
